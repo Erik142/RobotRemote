@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="fill_parent"
+    android:layout_width="fill_parent">
+
+    <LinearLayout
+        android:id="@+id/sendLayout"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/editData"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="50"
+            android:hint="Skicka meddelande"
+            android:textColor="@color/primary_dark_material_dark"
+            android:textColorHint="@color/hint_foreground_material_light"/>
+        <Button
+            android:id="@+id/sendButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Skicka"/>
+
+        </LinearLayout>
+
+    <FrameLayout
+        android:layout_below="@id/sendLayout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        tools:context="com.example.erikwahlberger.robotremote.LoggFragment">
+
+        <ListView android:id="@+id/fragmentList" android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView android:id="@android:id/empty" android:layout_width="match_parent"
+            android:layout_height="match_parent" android:gravity="center" />
+
+    </FrameLayout>
+
+
+    </RelativeLayout>
+
+

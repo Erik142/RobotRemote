@@ -1,0 +1,43 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    tools:context="com.example.erikwahlberger.robotremote.manualControlFragment">
+
+    <Button
+        android:id="@+id/forwardButton"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:text="Framåt"
+        android:gravity="center"
+        android:layout_marginTop="127dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignLeft="@+id/backwardsButton"
+        android:layout_alignStart="@+id/backwardsButton" />
+    <Button
+        android:id="@+id/backwardsButton"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:text="Bakåt"
+        android:layout_below="@+id/rightButton"
+        android:layout_centerHorizontal="true"
+        android:shadowColor="#FFFFFF"/>
+    <Button
+        android:id="@+id/rightButton"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:text="Höger"
+        android:layout_below="@+id/forwardButton"
+        android:layout_toRightOf="@+id/forwardButton"
+        android:layout_toEndOf="@+id/forwardButton" />
+    <Button
+        android:id="@+id/leftButton"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:text="Vänster"
+        android:layout_below="@+id/forwardButton"
+        android:layout_toLeftOf="@+id/forwardButton"
+        android:layout_toStartOf="@+id/forwardButton" />
+
+</RelativeLayout>
