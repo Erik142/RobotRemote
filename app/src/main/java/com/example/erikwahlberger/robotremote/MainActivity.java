@@ -2,6 +2,7 @@ package com.example.erikwahlberger.robotremote;
 
 import android.app.Dialog;
 import android.app.Fragment;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -23,6 +24,7 @@ import android.widget.ListView;
 
 public class MainActivity extends ActionBarActivity implements multiInterface {
 
+    private int REQUEST_ENABLE_BT = 1;
     private String APP_NAME = "RobotRemote";
     private Toolbar toolbar;
     private DrawerLayout drawerLayout;
@@ -30,7 +32,11 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
     private ListView leftDrawerList;
     private ArrayAdapter<String> navigationDrawerAdapter;
     private String[] leftSliderData = {"Bluetooth-enheter", "Loggläge", "Manuellt läge"};
-    private BluetoothCOM bluetoothCOM;
+    private BluetoothAdapter defaultAdapter;
+
+    private BluetoothListFragment btFragment;
+    private LoggFragment loggFragment;
+    private manualControlFragment mcFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +49,8 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
         }
         initDrawer();
 
-        getFragmentManager().beginTransaction().replace(R.id.content_frame,BluetoothListFragment.newInstance()).commit();
+        btFragment = BluetoothListFragment.newInstance();
+        getFragmentManager().beginTransaction().replace(R.id.content_frame,btFragment).commit();
 
     }
 
@@ -91,13 +98,16 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
 
         switch (position) {
             case 0:
-                returnFragment = BluetoothListFragment.newInstance();
+                btFragment = BluetoothListFragment.newInstance();
+                returnFragment = btFragment;
                 break;
             case 1:
-                returnFragment = LoggFragment.newInstance();
+                loggFragment = LoggFragment.newInstance();
+                returnFragment = loggFragment;
                 break;
             case 2:
-                returnFragment = manualControlFragment.newInstance();
+                mcFragment = manualControlFragment.newInstance();
+                returnFragment = mcFragment;
                 break;
         }
 
@@ -154,7 +164,6 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
 
     @Override
     public void onBluetoothFragmentInitialized() {
-        bluetoothCOM = new BluetoothCOM(this);
     }
 
     @Override
@@ -167,36 +176,5 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
 
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
 
-        try
-        {
-            if (requestCode == bluetoothCOM.REQUEST_ENABLE_BT)
-            {
-                if (resultCode != RESULT_OK)
-                {
-                    throw new Exception("Bluetooth could not be enabled");
-                }
-                else
-                {
-                    bluetoothCOM.initConnection();
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Log.e(APP_NAME, e.toString());
-            if (e.toString() == "Bluetooth could not be enabled")
-            {
-                Dialog myDialog = new Dialog(this);
-                myDialog.setTitle("Bluetooth kunde inte startas");
-                myDialog.setCancelable(false);
-                myDialog.show();
-            }
-        }
-
-
-    }
 }

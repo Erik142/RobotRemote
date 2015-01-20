@@ -3,16 +3,17 @@ package com.example.erikwahlberger.robotremote;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
-import android.widget.Adapter;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -30,7 +31,7 @@ import java.util.ArrayList;
  * Activities containing this fragment MUST implement the {@link OnBluetoothFragmentInteractionListener}
  * interface.
  */
-public class BluetoothListFragment extends Fragment implements BluetoothListFragmentInterface {
+public class BluetoothListFragment extends Fragment implements ListView.OnItemClickListener {
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -41,13 +42,14 @@ public class BluetoothListFragment extends Fragment implements BluetoothListFrag
     //private String mParam1;
     //private String mParam2;
 
-    private static BluetoothCOM bluetoothCOM;
+    //private static BluetoothCOM bluetoothCOM;
     private OnBluetoothFragmentInteractionListener mListener;
 
     /**
      * The fragment's ListView/GridView.
      */
     private ListView mListView;
+    private ArrayList<BluetoothDevice> adapterList;
 
     /**
      * The Adapter which will be used to populate the ListView/GridView with
@@ -82,11 +84,11 @@ public class BluetoothListFragment extends Fragment implements BluetoothListFrag
        //     mParam2 = getArguments().getString(ARG_PARAM2);
        // }
 
-        ArrayList<BluetoothDevice> adapterList = new ArrayList<BluetoothDevice>();
-        adapterList.addAll(BluetoothAdapter.getDefaultAdapter().getBondedDevices());
+        adapterList = new ArrayList<BluetoothDevice>();
+        //adapterList.addAll(BluetoothAdapter.getDefaultAdapter().getBondedDevices());
 
         // TODO: Change Adapter to display your content
-        mAdapter = new BluetoothItemAdapter(getActivity().getBaseContext(),adapterList);
+
     }
 
     @Override
@@ -96,11 +98,11 @@ public class BluetoothListFragment extends Fragment implements BluetoothListFrag
 
         // Set the adapter
         mListView = (ListView) view.findViewById(R.id.bluetoothList);
-        mListView.setAdapter(mAdapter);
+
 
         // Set OnItemClickListener so we can be notified on item clicks
         mListView.setOnItemClickListener(this);
-        mListener.onBluetoothFragmentInitialized();
+
 
         return view;
     }
@@ -122,9 +124,29 @@ public class BluetoothListFragment extends Fragment implements BluetoothListFrag
         mListener = null;
     }
 
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        mAdapter = new BluetoothItemAdapter(getActivity().getBaseContext(),adapterList);
+
+        /*new Thread(new Runnable() {
+            @Override
+            public void run() {
+                getAllAvailableDevices();
+            }
+        }).start();*/
+
+        mListView.setAdapter(mAdapter);
+        mAdapter.addAll(BluetoothAdapter.getDefaultAdapter().getBondedDevices());
+
+        mListener.onBluetoothFragmentInitialized();
+
+    }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
         if (null != mListener) {
             // Notify the active callbacks interface (the activity, if the
             // fragment is attached to one) that an item has been selected.
@@ -143,11 +165,6 @@ public class BluetoothListFragment extends Fragment implements BluetoothListFrag
         if (emptyView instanceof TextView) {
             ((TextView) emptyView).setText(emptyText);
         }
-    }
-
-    @Override
-    public void foundDevice(BluetoothDevice device, boolean paired) {
-        mAdapter.add(device);
     }
 
     /**
