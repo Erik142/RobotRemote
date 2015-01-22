@@ -33,8 +33,12 @@
         android:layout_height="fill_parent"
         tools:context="com.example.erikwahlberger.robotremote.LoggFragment">
 
-        <ListView android:id="@+id/fragmentList" android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+        <ListView
+            android:id="@+id/fragmentList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:stackFromBottom="true"
+            android:transcriptMode="alwaysScroll"/>
 
         <TextView android:id="@android:id/empty" android:layout_width="match_parent"
             android:layout_height="match_parent" android:gravity="center" />

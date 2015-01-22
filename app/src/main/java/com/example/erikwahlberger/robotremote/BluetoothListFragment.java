@@ -175,6 +175,7 @@ public class BluetoothListFragment extends Fragment implements ListView.OnItemCl
         Log.i("RobotRemote", "onBluetoothToggle()");
 
         mAdapter.addAll(BluetoothAdapter.getDefaultAdapter().getBondedDevices());
+
     }
 
     public BluetoothDevice getActiveDevice()

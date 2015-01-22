@@ -3,12 +3,14 @@ package com.example.erikwahlberger.robotremote;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.Button;
 import android.widget.ListView;
@@ -16,13 +18,19 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 
 import com.example.erikwahlberger.robotremote.dummy.DummyContent;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -51,6 +59,7 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
     /**
      * The fragment's ListView/GridView.
      */
+    private String APP_NAME = "RobotRemote";
     private ArrayList<String> adapterList;
     private ListView mListView;
     private Button sendButton;
@@ -99,7 +108,6 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
         //}
 
         adapterList = new ArrayList<String>();
-
         // TODO: Change Adapter to display your content
         mAdapter = new LoggItemAdapter(getActivity().getBaseContext(), adapterList);
     }
@@ -120,7 +128,18 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                writeData(writeStream, sendData.toString());
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        writeData(writeStream, sendData.getText().toString());
+                    }
+                }).start();
+
+                sendData.setText("");
+                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(sendData.getWindowToken(), 0);
+
             }
         });
 
@@ -135,7 +154,8 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
         }
         else
         {
-            Log.e("RobotRemote", "bluetoothDevice was null");
+            Log.e(APP_NAME, "bluetoothDevice was null");
+            showToast("bluetoothDevice was null");
         }
 
         return view;
@@ -190,7 +210,7 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
                 {
                     final BluetoothSocket socket = bluetoothDevice.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"));
                     socket.connect();
-                    Log.i("RobotRemote", "socket.connect()");
+                    Log.i(APP_NAME, "socket.connect()");
 
                     readThread = new Thread(new Runnable() {
                         @Override
@@ -198,12 +218,13 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
                             try
                             {
 
-                                readData(socket.getInputStream());
+                                readData(new BufferedReader(new InputStreamReader(socket.getInputStream())));
 
                             }
                             catch (Exception e)
                             {
-                                Log.e("RobotRemote", "Could not start readThread.");
+                                Log.e(APP_NAME, "Could not start readThread.");
+                                showToast("Could not start readThread");
                             }
 
                         }
@@ -214,7 +235,8 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
                 }
                 catch (Exception e)
                 {
-                    Log.e("RobotRemote", "could not establish connection");
+                    Log.e(APP_NAME, "Could not establish connection");
+                    showToast("Could not establish connection");
                 }
 
             }
@@ -222,18 +244,16 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
 
     }
 
-    public void readData(InputStream inStream)
+    public void readData(BufferedReader inStream)
     {
-        byte[] inBuffer = new byte[4096];
         String inData = null;
         final String sendToUI = null;
 
         while(true) {
             try {
-                Log.i("RobotRemote", "beginRead");
+                Log.i(APP_NAME, "beginRead");
 
-                inStream.read(inBuffer);
-                inData = new String(inBuffer, "UTF-8");
+                inData = inStream.readLine();
 
                 //Log.i("RobotRemote", "inData = " + inData);
 
@@ -244,7 +264,8 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
 
 
             } catch (Exception e) {
-                Log.e("RobotRemote", "could not read data");
+                Log.e(APP_NAME, "Could not read data");
+                showToast("Could not read data");
             }
         }
 
@@ -254,13 +275,18 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
     {
         try
         {
-            byte[] sendData = data.getBytes();
-            stream.write(sendData);
-            stream.flush();
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream));
+            writer.write(data,0,data.length());
+            writer.flush();
+            updateAdapter(data);
+            //byte[] sendData = data.getBytes();
+            //stream.write(sendData);
+            //stream.flush();
         }
         catch (Exception e)
         {
-            Log.e("RobotRemote", "could not write data.");
+            Log.e(APP_NAME, "Could not write data.");
+            showToast("Could not write data");
         }
 
 
@@ -274,6 +300,16 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
             @Override
             public void run() {
                 mAdapter.add(sendToUi);
+            }
+        });
+    }
+
+    public void showToast(final String message)
+    {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getActivity().getBaseContext(),message,Toast.LENGTH_SHORT).show();
             }
         });
     }
