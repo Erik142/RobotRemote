@@ -1,19 +1,30 @@
 package com.example.erikwahlberger.robotremote;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
+import android.widget.EditText;
+import android.widget.Button;
+import android.widget.ListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.TextView;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 
 import com.example.erikwahlberger.robotremote.dummy.DummyContent;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.UUID;
 
 /**
  * A fragment representing a list of Items.
@@ -24,7 +35,7 @@ import com.example.erikwahlberger.robotremote.dummy.DummyContent;
  * Activities containing this fragment MUST implement the {@link OnLoggFragmentInteractionListener}
  * interface.
  */
-public class LoggFragment extends Fragment implements AbsListView.OnItemClickListener {
+public class LoggFragment extends Fragment implements ListView.OnItemClickListener {
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -40,13 +51,20 @@ public class LoggFragment extends Fragment implements AbsListView.OnItemClickLis
     /**
      * The fragment's ListView/GridView.
      */
-    private AbsListView mListView;
+    private ArrayList<String> adapterList;
+    private ListView mListView;
+    private Button sendButton;
+    private static BluetoothDevice bluetoothDevice;
+    private OutputStream writeStream;
+    private EditText sendData;
+
+    private Thread readThread;
 
     /**
      * The Adapter which will be used to populate the ListView/GridView with
      * Views.
      */
-    private ListAdapter mAdapter;
+    private LoggItemAdapter mAdapter;
 
     // TODO: Rename and change types of parameters
     public static LoggFragment newInstance() {
@@ -55,7 +73,13 @@ public class LoggFragment extends Fragment implements AbsListView.OnItemClickLis
        // args.putString(ARG_PARAM1, param1);
         //args.putString(ARG_PARAM2, param2);
         //fragment.setArguments(args);
+
         return fragment;
+    }
+
+    public void setDevice(BluetoothDevice device)
+    {
+        bluetoothDevice = device;
     }
 
     /**
@@ -74,9 +98,10 @@ public class LoggFragment extends Fragment implements AbsListView.OnItemClickLis
         //    mParam2 = getArguments().getString(ARG_PARAM2);
         //}
 
+        adapterList = new ArrayList<String>();
+
         // TODO: Change Adapter to display your content
-        mAdapter = new ArrayAdapter<DummyContent.DummyItem>(getActivity(),
-                R.layout.navigation_drawer_item, android.R.id.text1, DummyContent.ITEMS);
+        mAdapter = new LoggItemAdapter(getActivity().getBaseContext(), adapterList);
     }
 
     @Override
@@ -85,13 +110,33 @@ public class LoggFragment extends Fragment implements AbsListView.OnItemClickLis
         View view = inflater.inflate(R.layout.fragment_logg_list, container, false);
 
         // Set the adapter
-        mListView = (AbsListView) view.findViewById(R.id.fragmentList);
+        mListView = (ListView) view.findViewById(R.id.fragmentList);
         ((AdapterView<ListAdapter>) mListView).setAdapter(mAdapter);
+
+        sendData = (EditText)view.findViewById(R.id.editData);
+
+        sendButton = (Button)view.findViewById(R.id.sendButton);
+
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                writeData(writeStream, sendData.toString());
+            }
+        });
 
         // Set OnItemClickListener so we can be notified on item clicks
         mListView.setOnItemClickListener(this);
 
         mListener.onLoggFragmentInitialized();
+
+        if (bluetoothDevice != null)
+        {
+            setupConnection();
+        }
+        else
+        {
+            Log.e("RobotRemote", "bluetoothDevice was null");
+        }
 
         return view;
     }
@@ -134,6 +179,103 @@ public class LoggFragment extends Fragment implements AbsListView.OnItemClickLis
         if (emptyView instanceof TextView) {
             ((TextView) emptyView).setText(emptyText);
         }
+    }
+
+    public void setupConnection()
+    {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try
+                {
+                    final BluetoothSocket socket = bluetoothDevice.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"));
+                    socket.connect();
+                    Log.i("RobotRemote", "socket.connect()");
+
+                    readThread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try
+                            {
+
+                                readData(socket.getInputStream());
+
+                            }
+                            catch (Exception e)
+                            {
+                                Log.e("RobotRemote", "Could not start readThread.");
+                            }
+
+                        }
+                    });
+
+                    readThread.start();
+
+                }
+                catch (Exception e)
+                {
+                    Log.e("RobotRemote", "could not establish connection");
+                }
+
+            }
+        }).start();
+
+    }
+
+    public void readData(InputStream inStream)
+    {
+        byte[] inBuffer = new byte[4096];
+        String inData = null;
+        final String sendToUI = null;
+
+        while(true) {
+            try {
+                Log.i("RobotRemote", "beginRead");
+
+                inStream.read(inBuffer);
+                inData = new String(inBuffer, "UTF-8");
+
+                //Log.i("RobotRemote", "inData = " + inData);
+
+                if (inData != null && inData != "") {
+                    updateAdapter(inData);
+
+                }
+
+
+            } catch (Exception e) {
+                Log.e("RobotRemote", "could not read data");
+            }
+        }
+
+    }
+
+    public void writeData(OutputStream stream, String data)
+    {
+        try
+        {
+            byte[] sendData = data.getBytes();
+            stream.write(sendData);
+            stream.flush();
+        }
+        catch (Exception e)
+        {
+            Log.e("RobotRemote", "could not write data.");
+        }
+
+
+    }
+
+    public void updateAdapter(String data)
+    {
+        final String sendToUi = data;
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mAdapter.add(sendToUi);
+            }
+        });
     }
 
     /**

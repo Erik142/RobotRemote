@@ -117,6 +117,19 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_ENABLE_BT)
+        {
+            if (resultCode == RESULT_OK)
+            {
+                btFragment.onBluetoothToggle();
+            }
+        }
+    }
+
+    @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         drawerToggle.syncState();
@@ -152,8 +165,16 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
     }
 
     @Override
-    public void onBluetoothFragmentInteraction(String id)
+    public void onBluetoothFragmentInteraction(BluetoothDevice clickedDevice)
     {
+        FragmentManager fragmentManager = getFragmentManager();
+
+        loggFragment = LoggFragment.newInstance();
+        loggFragment.setDevice(clickedDevice);
+
+        Log.i(APP_NAME, "onBluetoothFragmentInteraction(), clickedDevice");
+
+        fragmentManager.beginTransaction().replace(R.id.content_frame,loggFragment).commit();
 
     }
 
@@ -164,6 +185,21 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
 
     @Override
     public void onBluetoothFragmentInitialized() {
+        BluetoothAdapter defaultAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        if (defaultAdapter != null)
+        {
+            if (!defaultAdapter.isEnabled())
+            {
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            }
+            else {
+                btFragment.onBluetoothToggle();
+            }
+
+        }
+
     }
 
     @Override

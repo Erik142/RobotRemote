@@ -50,6 +50,7 @@ public class BluetoothListFragment extends Fragment implements ListView.OnItemCl
      */
     private ListView mListView;
     private ArrayList<BluetoothDevice> adapterList;
+    private int currentDevice;
 
     /**
      * The Adapter which will be used to populate the ListView/GridView with
@@ -138,7 +139,7 @@ public class BluetoothListFragment extends Fragment implements ListView.OnItemCl
         }).start();*/
 
         mListView.setAdapter(mAdapter);
-        mAdapter.addAll(BluetoothAdapter.getDefaultAdapter().getBondedDevices());
+        //mAdapter.addAll(BluetoothAdapter.getDefaultAdapter().getBondedDevices());
 
         mListener.onBluetoothFragmentInitialized();
 
@@ -147,10 +148,12 @@ public class BluetoothListFragment extends Fragment implements ListView.OnItemCl
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
+        currentDevice = position;
+
         if (null != mListener) {
             // Notify the active callbacks interface (the activity, if the
             // fragment is attached to one) that an item has been selected.
-            mListener.onBluetoothFragmentInteraction(DummyContent.ITEMS.get(position).id);
+            mListener.onBluetoothFragmentInteraction(mAdapter.getItem(position));
         }
     }
 
@@ -167,6 +170,18 @@ public class BluetoothListFragment extends Fragment implements ListView.OnItemCl
         }
     }
 
+    public void onBluetoothToggle()
+    {
+        Log.i("RobotRemote", "onBluetoothToggle()");
+
+        mAdapter.addAll(BluetoothAdapter.getDefaultAdapter().getBondedDevices());
+    }
+
+    public BluetoothDevice getActiveDevice()
+    {
+        return mAdapter.getItem(currentDevice);
+    }
+
     /**
      * This interface must be implemented by activities that contain this
      * fragment to allow an interaction in this fragment to be communicated
@@ -179,7 +194,7 @@ public class BluetoothListFragment extends Fragment implements ListView.OnItemCl
      */
     public interface OnBluetoothFragmentInteractionListener {
         // TODO: Update argument type and name
-        public void onBluetoothFragmentInteraction(String id);
+        public void onBluetoothFragmentInteraction(BluetoothDevice clickedDevice);
         public void onBluetoothFragmentInitialized();
     }
 
