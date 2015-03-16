@@ -66,6 +66,8 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
     private static BluetoothDevice bluetoothDevice;
     private OutputStream writeStream;
     private EditText sendData;
+    private boolean isConnected = false;
+    private BluetoothSocket btSocket;
 
     private Thread readThread;
 
@@ -131,8 +133,7 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-
-                        writeData(writeStream, sendData.getText().toString());
+                        writeData(sendData.getText().toString());
                     }
                 }).start();
 
@@ -176,8 +177,36 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
     public void onDetach() {
         super.onDetach();
         mListener = null;
+        isConnected = false;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        isConnected = false;
+        if (readThread != null) {
+            if (readThread.isAlive()) {
+                try {
+                    readThread.join();
+                } catch (Exception e) {
+                    readThread = null;
+                    Log.e(APP_NAME, "Could not close thread");
+                }
+
+            }
+        }
+        try
+        {
+            if (btSocket != null) {
+                btSocket.close();
+            }
+        }
+        catch (Exception e)
+        {
+            Log.e(APP_NAME, "Could not close socket.");
+        }
+
+    }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -210,7 +239,10 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
                 {
                     final BluetoothSocket socket = bluetoothDevice.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"));
                     socket.connect();
+                    btSocket = socket;
                     Log.i(APP_NAME, "socket.connect()");
+                    writeStream = socket.getOutputStream();
+                    isConnected = true;
 
                     readThread = new Thread(new Runnable() {
                         @Override
@@ -248,40 +280,66 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
     {
         String inData = null;
         final String sendToUI = null;
+        int timesNotRead = 0;
 
-        while(true) {
-            try {
-                Log.i(APP_NAME, "beginRead");
+        while(isConnected) {
+            if (btSocket != null && btSocket.isConnected()) {
+                try {
+                    //Log.i(APP_NAME, "beginRead");
 
-                inData = inStream.readLine();
+                    inData = inStream.readLine();
+                    timesNotRead = 0;
 
-                //Log.i("RobotRemote", "inData = " + inData);
+                    //Log.i("RobotRemote", "inData = " + inData);
 
-                if (inData != null && inData != "") {
-                    updateAdapter(inData);
+                    if (inData != null && inData != "") {
+                        updateAdapter(inData);
 
+                    }
+
+
+                } catch (Exception e) {
+                    Log.e(APP_NAME, "Could not read data");
+
+                    timesNotRead++;
+                    if (timesNotRead >= 5) {
+                        showToast("Could not read data");
+                        break;
+                    }
                 }
-
-
-            } catch (Exception e) {
-                Log.e(APP_NAME, "Could not read data");
-                showToast("Could not read data");
+            }
+            else
+            {
+                break;
             }
         }
 
     }
 
-    public void writeData(OutputStream stream, String data)
+    public void writeData(String data)
     {
         try
         {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream));
+            OutputStream stream = btSocket.getOutputStream();
+            stream.write(data.getBytes());
+
+            /*BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(btSocket.getOutputStream()));
+            Log.i(APP_NAME, "BufferedWriter writer");
             writer.write(data,0,data.length());
-            writer.flush();
+            Log.i(APP_NAME, "writer.write()");
+            //writer.flush();
+            //Log.i(APP_NAME, "writer.flush()");*/
+
+
+
+            /*byte[] sendData = data.getBytes();
+            Log.i(APP_NAME, "data.getBytes()");
+            writeStream.write(sendData);
+            Log.i(APP_NAME, "stream.write()");
+            writeStream.flush();
+            Log.i(APP_NAME, "stream.flush()");
             updateAdapter(data);
-            //byte[] sendData = data.getBytes();
-            //stream.write(sendData);
-            //stream.flush();
+            Log.i(APP_NAME, "updateAdapter()");*/
         }
         catch (Exception e)
         {
@@ -306,12 +364,20 @@ public class LoggFragment extends Fragment implements ListView.OnItemClickListen
 
     public void showToast(final String message)
     {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(getActivity().getBaseContext(),message,Toast.LENGTH_SHORT).show();
-            }
-        });
+        try
+        {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getActivity().getBaseContext(),message,Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        catch (Exception e)
+        {
+
+        }
+
     }
 
     /**

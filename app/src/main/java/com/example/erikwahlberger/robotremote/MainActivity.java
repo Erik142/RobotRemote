@@ -31,12 +31,11 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
     private ActionBarDrawerToggle drawerToggle;
     private ListView leftDrawerList;
     private ArrayAdapter<String> navigationDrawerAdapter;
-    private String[] leftSliderData = {"Bluetooth-enheter", "Loggläge", "Manuellt läge"};
+    private String[] leftSliderData = {"Bluetooth-enheter", "Loggläge"};
     private BluetoothAdapter defaultAdapter;
 
     private BluetoothListFragment btFragment;
     private LoggFragment loggFragment;
-    private manualControlFragment mcFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,9 +104,7 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
                 loggFragment = LoggFragment.newInstance();
                 returnFragment = loggFragment;
                 break;
-            case 2:
-                mcFragment = manualControlFragment.newInstance();
-                returnFragment = mcFragment;
+            default:
                 break;
         }
 
@@ -179,11 +176,6 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
     }
 
     @Override
-    public void onManualControlFragmentInteraction(Uri uri) {
-
-    }
-
-    @Override
     public void onBluetoothFragmentInitialized() {
         BluetoothAdapter defaultAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -204,11 +196,6 @@ public class MainActivity extends ActionBarActivity implements multiInterface {
 
     @Override
     public void onLoggFragmentInitialized() {
-
-    }
-
-    @Override
-    public void onManualControlFragmentInitialized() {
 
     }
 
